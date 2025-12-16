@@ -1,22 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-int main() {
-int i=5;
-char *next=NULL;
-char *cmd=NULL;
-if (i > 0) {
-if (!access("Sully_5.c", F_OK)) { i--; }
-if (asprintf(&next, "Sully_%d.c", i) == -1) { return 1; }
-FILE *f = fopen(next, "w");
-if (!f) { free(next); return 1; }
-char *s = "#include <stdio.h>%1$c#include <stdlib.h>%1$c#include <unistd.h>%1$cint main() {%1$cint i=%4$d;%1$cchar *next=NULL;%1$cchar *cmd=NULL;%1$cif (i > 0) {%1$cif (!access(%2$cSully_5.c%2$c, F_OK)) { i--; }%1$cif (asprintf(&next, %2$cSully_%%d.c%2$c, i) == -1) { return 1; }%1$cFILE *f = fopen(next, %2$cw%2$c);%1$cif (!f) { free(next); return 1; }%1$cchar *s = %2$c%3$s%2$c;%1$cif (fprintf(f, s, 10, 34, s, i) < 0) { fclose(f); free(next); return 1; }%1$cfclose(f);%1$cif (asprintf(&cmd, %2$cgcc %%s -o Sully && ./Sully%2$c, next) == -1) { free(next); return 1; }%1$csystem(cmd);%1$cfree(next);%1$cfree(cmd);%1$c}%1$creturn 0;%1$c}%1$c";
-if (fprintf(f, s, 10, 34, s, i) < 0) { fclose(f); free(next); return 1; }
-fclose(f);
-if (asprintf(&cmd, "gcc %s -o Sully && ./Sully", next) == -1) { free(next); return 1; }
-system(cmd);
-free(next);
-free(cmd);
-}
-return 0;
+#include <string.h>
+
+#define STR "#include <stdio.h>%1$c#include <stdlib.h>%1$c#include <string.h>%1$c%1$c#define STR %2$c%3$s%2$c%1$c%1$cint main(void)%1$c{%1$c%5$cint i = %4$d;%1$c%5$cif (i <= 0) return (0);%1$c%5$cchar current[100];%1$c%5$cchar next[100];%1$c%5$cchar exec[100];%1$c%5$cchar cmd[300];%1$c%5$cchar run[200];%1$c%5$csprintf(current, %2$cSully_%%d.c%2$c, i);%1$c%5$cif (!strcmp(current, __FILE__))i--;%1$c%5$csprintf(next, %2$cSully_%%d.c%2$c, i);%1$c%5$csprintf(exec, %2$cSully_%%d%2$c, i);%1$c%5$cFILE *f = fopen(next, %2$cw%2$c);%1$c%5$cif (f == NULL) return (1);%1$c%5$cfprintf(f, STR, 10, 34, STR, i, 9);%1$c%5$cfclose(f);%1$c%5$csprintf(cmd, %2$cgcc -o %%s %%s%2$c, exec, next);%1$c%5$csprintf(run, %2$c./%%s%2$c, exec);%1$c%5$cif (system(cmd) != 0) return (1);%1$c%5$cif (system(run) != 0) return (1);%1$c%5$creturn (0);%1$c}%1$c"
+
+int main(void)
+{
+	int i = 5;
+	if (i <= 0) return (0);
+	char current[100];
+	char next[100];
+	char exec[100];
+	char cmd[300];
+	char run[200];
+	sprintf(current, "Sully_%d.c", i);
+	if (!strcmp(current, __FILE__))i--;
+	sprintf(next, "Sully_%d.c", i);
+	sprintf(exec, "Sully_%d", i);
+	FILE *f = fopen(next, "w");
+	if (f == NULL) return (1);
+	fprintf(f, STR, 10, 34, STR, i, 9);
+	fclose(f);
+	sprintf(cmd, "gcc -o %s %s", exec, next);
+	sprintf(run, "./%s", exec);
+	if (system(cmd) != 0) return (1);
+	if (system(run) != 0) return (1);
+	return (0);
 }
